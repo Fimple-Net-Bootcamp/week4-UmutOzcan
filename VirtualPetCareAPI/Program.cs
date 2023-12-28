@@ -1,16 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using VirtualPetCareAPI.DBOperations;
+using VirtualPetCareAPI.Data.DBOperations;
+using VirtualPetCareAPI.Service.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Database service eklendi
-builder.Services.AddDbContext<VirtualPetCareDbContext>(options => 
+builder.Services.AddDbContext<VirtualPetCareDbContext>(options =>
                                                        options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddControllersWithViews()
-    .AddNewtonsoftJson(options =>
-    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
-);
+// AutoMapper islemleri
+builder.Services.AddAutoMapper(typeof(MapProfile));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using VirtualPetCareAPI.DBOperations;
-using VirtualPetCareAPI.Entities;
+using Microsoft.EntityFrameworkCore;
+using VirtualPetCareAPI.Data.DBOperations;
+using VirtualPetCareAPI.Data.DTOs.Nutrient;
+using VirtualPetCareAPI.Data.Entities;
 
 namespace VirtualPetCareAPI.Controllers
 {
@@ -11,38 +13,43 @@ namespace VirtualPetCareAPI.Controllers
     {
         // Dependency Injection ile context kullanma
         private readonly VirtualPetCareDbContext _db;
-        public NutrientController(VirtualPetCareDbContext virtualPetCareDbContext)
+        private readonly IMapper _mapper;
+        public NutrientController(VirtualPetCareDbContext virtualPetCareDbContext, IMapper mapper)
         {
             _db = virtualPetCareDbContext;
+            _mapper = mapper;
         }
 
 
         [HttpPost] // /api/nutrients
-        public IActionResult Create(Nutrient nutrient)
+        public async Task<IActionResult> Create(NutrientDTO newNutrient)
         {
-            _db.Nutrients.Add(nutrient);
-            _db.SaveChanges();
+            var entity = _mapper.Map<NutrientDTO, Nutrient>(newNutrient);
+            _db.Nutrients.Add(entity);
+            await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = nutrient.PetId }, nutrient); // olusturulan kaynagin bilgilerini donder 201
+            return CreatedAtAction(nameof(GetById), new { entity.PetId }, entity); // olusturulan kaynagin bilgilerini donder 201
         }
 
         [HttpGet]
         [Route("{PetId}")] // /api/nutrients/PetId
-        public IActionResult GetById(int PetId)
+        public async Task<IActionResult> GetById(int PetId)
         {
-            var nutrient = _db.Nutrients.Where(x => x.PetId == PetId).FirstOrDefault(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
+            var nutrients = await _db.Nutrients.Where(x => x.PetId == PetId).ToListAsync();
+            if (!nutrients.Any()) return NotFound(); // 404
+            var entities = _mapper.Map<List<NutrientDTO>>(nutrients);
 
-            if (nutrient is null) return NotFound(); // 404
-            return Ok(nutrient); // 200
+            return Ok(entities); // 200
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var nutrients = _db.Nutrients.ToList(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
-
+            var nutrients = await _db.Nutrients.ToListAsync(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
             if (!nutrients.Any()) return NotFound(); // 404
-            return Ok(nutrients); // 200
+            var entities = _mapper.Map<List<NutrientDTO>>(nutrients);
+
+            return Ok(entities); // 200
         }
     }
 }

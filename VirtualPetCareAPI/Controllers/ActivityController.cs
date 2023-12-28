@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using VirtualPetCareAPI.DBOperations;
-using VirtualPetCareAPI.Entities;
+using VirtualPetCareAPI.Data.DBOperations;
+using VirtualPetCareAPI.Data.DTOs.Activity;
+using VirtualPetCareAPI.Data.Entities;
 
 namespace VirtualPetCareAPI.Controllers
 {
@@ -12,29 +13,34 @@ namespace VirtualPetCareAPI.Controllers
     {
         // Dependency Injection ile context kullanma
         private readonly VirtualPetCareDbContext _db;
-        public ActivityController(VirtualPetCareDbContext virtualPetCareDbContext)
+        private readonly IMapper _mapper;
+
+        public ActivityController(VirtualPetCareDbContext virtualPetCareDbContext, IMapper mapper)
         {
             _db = virtualPetCareDbContext;
+            _mapper = mapper;
         }
 
 
         [HttpPost] // /api/activities
-        public IActionResult Create(Activity activity)
+        public async Task<IActionResult> Create(ActivityDTO newActivity)
         {
-            _db.Activities.Add(activity);
-            _db.SaveChanges();
+            var entity = _mapper.Map<Activity>(newActivity);
+            _db.Activities.Add(entity);
+            await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = activity.PetId }, activity); // olusturulan kaynagin bilgilerini donder 201
+            return CreatedAtAction(nameof(GetById), new { entity.PetId }, entity); // olusturulan kaynagin bilgilerini donder 201
         }
 
         [HttpGet]
         [Route("{PetId}")] // /api/activities/PetId
-        public IActionResult GetById(int PetId)
+        public async Task<IActionResult> GetById(int PetId)
         {
-            var activity = _db.Activities.Where(x => x.PetId == PetId).FirstOrDefault(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
+            var activities = await _db.Activities.Where(x => x.PetId == PetId).ToListAsync();
+            if (!activities.Any()) return NotFound(); // 404
+            var entity = _mapper.Map<List<ActivityDTO>>(activities);
 
-            if (activity is null) return NotFound(); // 404
-            return Ok(activity); // 200
+            return Ok(entity); // 200
         }
     }
 }

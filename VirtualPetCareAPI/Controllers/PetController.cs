@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using VirtualPetCareAPI.DBOperations;
-using VirtualPetCareAPI.Entities;
+using VirtualPetCareAPI.Data.DBOperations;
+using VirtualPetCareAPI.Data.DTOs.Pet;
+using VirtualPetCareAPI.Data.Entities;
 
 namespace VirtualPetCareAPI.Controllers;
 
@@ -11,62 +13,55 @@ public class PetController : ControllerBase
 {
     // Dependency Injection ile context kullanma
     private readonly VirtualPetCareDbContext _db;
-    public PetController(VirtualPetCareDbContext virtualPetCareDbContext)
+    private readonly IMapper _mapper;
+    public PetController(VirtualPetCareDbContext virtualPetCareDbContext, IMapper mapper)
     {
         _db = virtualPetCareDbContext;
+        _mapper = mapper;
     }
 
     [HttpPost] // /api/pets
-    public async Task<IActionResult> Create(Pet pet)
+    public async Task<IActionResult> Create(PetDTO newPet)
     {
-        _db.Pets.Add(pet);
+        if(!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+        var entity = _mapper.Map<Pet>(newPet);
+        _db.Pets.Add(entity);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = pet.PetId }, pet); // olusturulan kaynagin bilgilerini donder 201
+        return CreatedAtAction(nameof(GetById), new { entity.Id }, newPet); // olusturulan kaynagin bilgilerini donder 201
     }
 
+    // lazy loading açık includea gerek yok
     [HttpGet] // /api/pets
     public async Task<IActionResult>  GetAll()
     {
-        var pets = await _db.Pets
-            .Include(p => p.Nutrients)
-            .Include(p => p.Activities)
-            .Include(p => p.HealthStatuses)
-            .ToListAsync();
-
+        var pets = await _db.Pets.ToListAsync();
         if (!pets.Any()) return NotFound(); // 404
-        return Ok(pets); // 200
+        var entities = _mapper.Map<List<PetDTO>>(pets);
+
+        return Ok(entities); // 200
     }
 
     [HttpGet]
-    [Route("{id}")] // /api/pets/id
-    public async Task<IActionResult> GetById(int id)
+    [Route("{PetId}")] // /api/pets/id
+    public async Task<IActionResult> GetById(int PetId)
     {
-        var pet = await _db.Pets
-            .Include(p => p.Nutrients)
-            .Include(p => p.Activities)
-            .Include(p => p.HealthStatuses)
-            .Where(x => x.PetId == id)
-            .FirstOrDefaultAsync(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
-
+        var pet = await _db.Pets.Where(x => x.Id == PetId).FirstOrDefaultAsync(); // First'de garanti deger olmali, FirstOrDefault ile yoksa null doner
         if (pet is null) return NotFound(); // 404
-        return Ok(pet); // 200
+        var entity = _mapper.Map<PetDTO>(pet);
+
+        return Ok(entity); // 200
     }
 
     [HttpPut("{id}")] // /api/pets/id
-    public async Task<IActionResult> Update(int id, Pet pet)
+    public async Task<IActionResult> Update(int id, PetDTO pet)
     {
-        var current = _db.Pets.Where(x => x.PetId == id).FirstOrDefault();
-
-        if(current is null) return NotFound(); // 404
-        if (!ModelState.IsValid) return BadRequest(ModelState); // 400
-
-        current.PetName = pet.PetName;
-        current.Species = pet.Species;
-        current.DateOfBirth = pet.DateOfBirth;
+        var updatedPet = await _db.Pets.Where(x => x.Id == id).FirstOrDefaultAsync();
+        if (updatedPet is null) return NotFound(); // 404
+        _mapper.Map(pet,updatedPet);
         await _db.SaveChangesAsync();
 
-        return Ok(current); // 200
+        return NoContent(); // 200
     }
 
 }
