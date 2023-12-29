@@ -1,8 +1,9 @@
 using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VirtualPetCareAPI.Data.DBOperations;
-using VirtualPetCareAPI.Data.DTOs.User;
+using VirtualPetCareAPI.Data.DTOs;
 using VirtualPetCareAPI.Data.Entities;
 
 namespace VirtualPetCareAPI.Controllers;
@@ -14,16 +15,27 @@ public class UserController : ControllerBase
     // Dependency Injection ile context kullanma
     private readonly VirtualPetCareDbContext _db;
     private readonly IMapper _mapper;
-    public UserController(VirtualPetCareDbContext virtualPetCareDbContext, IMapper mapper)
+    private readonly IValidator<UserDTO> _validator;
+    public UserController(VirtualPetCareDbContext virtualPetCareDbContext, IMapper mapper, IValidator<UserDTO> validator)
     {
         _db = virtualPetCareDbContext;
         _mapper = mapper;
+        _validator = validator;
     }
 
     [HttpPost] // /api/users
     public async Task<IActionResult> Create(UserDTO newUser)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+        var result = _validator.Validate(newUser);
+        if (!result.IsValid)
+        {
+            var errorMessages = result.Errors
+                .Select(error => $"{error.PropertyName}: {error.ErrorMessage}")
+            .ToList();
+
+            return BadRequest(errorMessages);
+        }
+
         var entity = _mapper.Map<User>(newUser);
         _db.Users.Add(entity);
         await _db.SaveChangesAsync();

@@ -1,11 +1,5 @@
 ﻿using AutoMapper;
-using VirtualPetCareAPI.Data.DTOs.Activity;
-using VirtualPetCareAPI.Data.DTOs.HealthStatus;
-using VirtualPetCareAPI.Data.DTOs.Nutrient;
-using VirtualPetCareAPI.Data.DTOs.Pet;
-using VirtualPetCareAPI.Data.DTOs.SocialInteraction;
-using VirtualPetCareAPI.Data.DTOs.Training;
-using VirtualPetCareAPI.Data.DTOs.User;
+using VirtualPetCareAPI.Data.DTOs;
 using VirtualPetCareAPI.Data.Entities;
 namespace VirtualPetCareAPI.Service.Mapping;
 

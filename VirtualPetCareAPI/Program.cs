@@ -1,15 +1,27 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using VirtualPetCareAPI.Data.DBOperations;
+using VirtualPetCareAPI.Data.DTOs;
 using VirtualPetCareAPI.Service.Mapping;
+using VirtualPetCareAPI.Service.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database service eklendi
+// Database Context MSSQL configuration
 builder.Services.AddDbContext<VirtualPetCareDbContext>(options =>
                                                        options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-// AutoMapper islemleri
+// AutoMapper
 builder.Services.AddAutoMapper(typeof(MapProfile));
+
+// Fluent Validation
+builder.Services.AddSingleton<IValidator<ActivityDTO>, ActivityValidator>();
+builder.Services.AddSingleton<IValidator<HealthStatusDTO>, HealthStatusValidator>();
+builder.Services.AddSingleton<IValidator<NutrientDTO>, NutrientValidator>();
+builder.Services.AddSingleton<IValidator<UserDTO>, UserValidator>();
+builder.Services.AddSingleton<IValidator<PetDTO>, PetValidator>();
+builder.Services.AddSingleton<IValidator<TrainingDTO>, TrainingValidator>();
+builder.Services.AddSingleton<IValidator<SocialInteractionDTO>, SocialInteractionValidator>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
