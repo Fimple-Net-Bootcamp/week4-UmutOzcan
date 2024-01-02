@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VirtualPetCareAPI.Data.DBOperations;
 using VirtualPetCareAPI.Data.DTOs;
 using VirtualPetCareAPI.Service.Mapping;
+using VirtualPetCareAPI.Service.Middlewares;
 using VirtualPetCareAPI.Service.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
